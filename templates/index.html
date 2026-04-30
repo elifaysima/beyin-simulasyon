@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>BEYİN — 3B Nöral Simülasyon</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#040208;--ui-bg:rgba(6,2,10,0.92);--border:rgba(200,100,120,0.28);
+  --accent:#e87090;--accent2:#70c0e0;--text:#f0e0e8;--dim:#7070a0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text)}
+canvas{display:block;position:fixed;top:0;left:0}
+
+#hdr{position:fixed;top:0;left:0;right:0;z-index:30;padding:8px 18px;
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(to bottom,rgba(4,2,8,.95),transparent);pointer-events:none}
+#hdr h1{font-size:18px;font-weight:700;letter-spacing:6px;color:#e8a0a0;
+  text-shadow:0 0 18px rgba(232,112,144,.55)}
+#hdr span{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:2px}
+.dot{width:7px;height:7px;border-radius:50%;background:#44ff88;box-shadow:0 0 7px #44ff88;animation:blink 2s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+.panel{position:fixed;background:var(--ui-bg);border:1px solid var(--border);
+  border-radius:6px;padding:11px 13px;backdrop-filter:blur(16px);z-index:20;font-size:12px}
+.ptitle{font-size:10px;letter-spacing:3px;color:#9888b8;margin-bottom:8px;text-transform:uppercase;font-weight:700}
+
+#pinfo{top:44px;left:14px;width:210px}
+#rname{font-size:14px;font-weight:600;color:#e8a0a0;min-height:18px;margin-bottom:2px}
+#rlobe{font-size:10px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:7px}
+.abar-bg{background:rgba(255,255,255,.06);border-radius:2px;height:4px;overflow:hidden;margin-bottom:4px}
+#abar{height:100%;background:linear-gradient(90deg,#7a3040,#e87090);border-radius:2px;transition:width .5s;width:50%}
+#apct{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent)}
+
+#plegend{top:196px;left:14px;width:210px;margin-bottom:0}
+.li{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:10px}
+.sw{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+/* DETAIL PANEL - sağ üst, tıklayınca açılır */
+#pdetail{top:44px;right:14px;width:260px;display:none;max-height:calc(100vh - 450px);overflow-y:auto;position:fixed}
+#pdetail::-webkit-scrollbar{width:3px}
+#pdetail::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+#det-title{font-size:15px;font-weight:700;color:#ffccd8;margin-bottom:3px;padding-right:24px;line-height:1.3}
+#det-type{font-size:9px;letter-spacing:2px;color:var(--accent2);margin-bottom:10px;font-family:'Share Tech Mono',monospace}
+#det-close{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;font-family:'Share Tech Mono',monospace;line-height:1}
+#det-close:hover{color:var(--accent)}
+.det-row{display:flex;justify-content:space-between;align-items:flex-start;margin:5px 0;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);gap:8px}
+.det-row span:first-child{color:#b0a0c8;font-size:11px;flex-shrink:0;font-weight:700}
+.det-row span:last-child{color:#ffffff;font-size:11px;font-family:'Share Tech Mono',monospace;text-align:right;line-height:1.3;font-weight:600}
+.det-bar-wrap{background:rgba(255,255,255,.06);border-radius:2px;height:5px;margin-top:10px;overflow:hidden}
+.det-bar{height:100%;border-radius:2px;transition:width .6s ease}
+#det-desc{margin-top:10px;font-size:11px;color:#c0b0d8;font-weight:700;line-height:1.8;border-top:1px solid var(--border);padding-top:8px}
+
+#pmode{bottom:14px;left:14px;width:210px;max-height:420px;overflow-y:auto}
+select,input[type=number]{background:#0c0416;color:var(--text);
+  border:1px solid var(--border);border-radius:4px;padding:4px 7px;
+  font-family:'Rajdhani',sans-serif;font-size:12px}
+select{width:100%;appearance:none;margin-bottom:6px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23e87090'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;padding-right:22px;background-color:#0c0416}
+select option{background:#0c0416;color:var(--text)}
+select:focus,input[type=number]:focus{outline:none;border-color:var(--accent)}
+.btn{width:100%;padding:6px;background:linear-gradient(135deg,rgba(200,80,100,.28),rgba(200,80,100,.12));
+  color:var(--accent);border:1px solid rgba(200,80,100,.38);border-radius:4px;
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;
+  cursor:pointer;margin-bottom:4px;transition:all .2s}
+.btn:hover{background:linear-gradient(135deg,rgba(200,80,100,.5),rgba(200,80,100,.3))}
+.btn2{color:var(--accent2);border-color:rgba(112,192,224,.35);background:linear-gradient(135deg,rgba(70,140,180,.25),rgba(70,140,180,.08))}
+.mrow{display:flex;gap:4px;margin:6px 0}
+.mrow input{flex:1;width:0}
+
+/* Anket - sağ alt, kısa, scrollable */
+#pq{bottom:14px;right:14px;width:300px;max-height:320px;overflow-y:auto}
+#pq::-webkit-scrollbar{width:3px}
+#pq::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.qg{border-left:3px solid rgba(200,100,120,0.5);padding-left:10px;margin:10px 0;padding-top:2px}
+.qgt{font-size:11px;color:#f090a8;letter-spacing:1px;margin-bottom:7px;font-weight:700;text-transform:uppercase}
+.sr{margin:5px 0}
+.sr label{display:block;font-size:12px;color:#ddd4ee;font-weight:700;margin-bottom:4px;line-height:1.45}
+input[type=range]{width:100%;height:3px;appearance:none;background:rgba(255,255,255,.1);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:10px;height:10px;border-radius:50%;
+  background:var(--accent);cursor:pointer;box-shadow:0 0 5px rgba(232,112,144,.5)}
+#diagmsg{margin-top:7px;padding:7px;background:rgba(68,255,136,.07);
+  border:1px solid rgba(68,255,136,.2);border-radius:4px;
+  font-family:'Share Tech Mono',monospace;font-size:10px;color:#88ffcc;line-height:1.7;display:none;white-space:pre}
+
+/* NT INFO PANEL */
+#pnt{left:14px;width:210px;display:none;max-height:260px;overflow-y:auto;bottom:auto}
+#pnt::-webkit-scrollbar{width:3px}
+#pnt::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.nt-item{margin:8px 0;padding:8px;border-radius:4px;border:1px solid rgba(255,255,255,.08);cursor:pointer}
+.nt-item:hover{border-color:var(--border)}
+.nt-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.nt-tag{font-size:9px;font-family:'Share Tech Mono',monospace;opacity:.7;margin-bottom:5px}
+.nt-row{font-size:10px;color:var(--dim);margin:2px 0;line-height:1.5}
+.nt-row b{color:var(--text)}
+#wlabel{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  background:var(--ui-bg);border:1px solid var(--border);color:var(--accent);
+  padding:4px 16px;border-radius:20px;font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:2px;pointer-events:none;z-index:20}
+
+.ptg{position:fixed;background:rgba(200,80,100,.15);color:var(--dim);
+  border:1px solid var(--border);font-size:10px;cursor:pointer;
+  padding:2px 6px;border-radius:3px;z-index:25;font-family:'Share Tech Mono',monospace;transition:color .2s}
+.ptg:hover{color:var(--accent)}
+
+#loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  color:#e8a0a0;font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:3px;z-index:50;text-align:center}
+#loading div{margin-top:10px;width:180px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+#loadbar{height:100%;background:var(--accent);border-radius:2px;animation:la 1.4s ease-in-out infinite}
+@keyframes la{0%{width:0}50%{width:75%}100%{width:100%}}
+</style>
+</head>
+<body>
+
+<div id="loading">BEYİN YÜKLENİYOR...<div><div id="loadbar"></div></div></div>
+
+<div id="hdr">
+  <div class="dot"></div>
+  <h1>BEYİN</h1>
+  <span>3B NÖRAL SİMÜLASYON // v3.0</span>
+</div>
+
+<div class="panel" id="pinfo">
+  <div class="ptitle">// AKTİF BÖLGE</div>
+  <div id="rname">— tıklayın —</div>
+  <div id="rlobe"></div>
+  <div class="abar-bg"><div id="abar"></div></div>
+  <div id="apct">Aktivite: —</div>
+</div>
+<button class="ptg" id="tg-info" style="top:44px;left:230px">✕</button>
+
+<div class="panel" id="plegend">
+  <div class="ptitle">// DOKU HARİTASI</div>
+  <div class="li"><div class="sw" style="background:#f0e8e0;border:1px solid #bbb"></div>Ak Madde (iç)</div>
+  <div class="li"><div class="sw" style="background:#e8a0a0"></div>Boz Madde (korteks)</div>
+  <div class="li"><div class="sw" style="background:#7a3040"></div>Sulkus / Kanal</div>
+  <div class="li"><div class="sw" style="background:#cc2233"></div>Arter</div>
+  <div class="li"><div class="sw" style="background:#3366cc"></div>Ven</div>
+  <div class="li"><div class="sw" style="background:#ff8822"></div>Bölge Aktivitesi</div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="panel" id="pdetail">
+  <button id="det-close">✕</button>
+  <div class="ptitle" id="det-typelabel">// BÖLGE</div>
+  <div id="det-title">—</div>
+  <div id="det-type">—</div>
+  <div id="det-rows"></div>
+  <div class="det-bar-wrap"><div class="det-bar" id="det-bar"></div></div>
+  <div id="det-desc"></div>
+</div>
+
+<!-- NT INFO PANEL -->
+<div class="panel" id="pnt">
+  <div class="ptitle">// NÖROTRANSMİTTERLER</div>
+  <div id="nt-content"></div>
+</div>
+<button class="ptg" id="tg-nt" style="left:14px;width:210px;text-align:center;letter-spacing:2px;padding:5px;background:rgba(68,255,136,.12);color:#44ff88;border-color:rgba(68,255,136,.3)">⬡ NÖROTRANSMİTTERLER</button>
+
+<div class="panel" id="pmode">
+  <div class="ptitle">// BEYİN MODU</div>
+  <select id="modesel" style="max-height:180px">
+    <optgroup label="── Uyku Evreleri ──">
+      <option value="n1_sleep">N1 — Uyku Başlangıcı</option>
+      <option value="n2_sleep">N2 — Hafif Uyku</option>
+      <option value="n3_sleep">N3 — Derin Uyku (SWS)</option>
+      <option value="rem_sleep">REM — Rüya Uykusu</option>
+      <option value="lucid_dream">Lusid Rüya</option>
+      <option value="sleep_paralysis">Uyku Felci</option>
+      <option value="hypnagogia">Hipnagoji (Uykuya Dalış)</option>
+    </optgroup>
+    <optgroup label="── Temel ──">
+      <option value="relaxed">Dinlenme</option>
+      <option value="morning_wake">Sabah Uyanma</option>
+      <option value="sleepy">Uykulu</option>
+      <option value="bored">Sıkılmış</option>
+      <option value="yawning">Esneme / Uyuşukluk</option>
+    </optgroup>
+    <optgroup label="── Duygusal ──">
+      <option value="happy">Mutlu</option>
+      <option value="sad">Üzgün</option>
+      <option value="angry">Sinirli</option>
+      <option value="fear">Korku</option>
+      <option value="love">Aşık</option>
+      <option value="jealous">Kıskanç</option>
+      <option value="grief">Yas / Derin Üzüntü</option>
+      <option value="excited">Heyecanlı</option>
+      <option value="nostalgic">Nostaljik</option>
+      <option value="lonely">Yalnız</option>
+      <option value="proud">Gururlu</option>
+      <option value="shame">Utanç</option>
+      <option value="disgust">İğrenme</option>
+      <option value="awe">Hayranlık / Şaşkınlık</option>
+    </optgroup>
+    <optgroup label="── Bilişsel ──">
+      <option value="active_study">Ders Çalışma</option>
+      <option value="creative">Yaratıcı Düşünce</option>
+      <option value="problem_solving">Problem Çözme</option>
+      <option value="reading">Okuma</option>
+      <option value="daydreaming">Hayal Kurma</option>
+      <option value="flow">Flow Durumu</option>
+      <option value="hyperfocus">Hiperfokus</option>
+      <option value="mind_wandering">Zihin Gezeginliği</option>
+      <option value="decision_making">Karar Verme Baskısı</option>
+      <option value="multitasking">Çoklu Görev</option>
+      <option value="foreign_speaking">Yabancı Dil Konuşma</option>
+      <option value="foreign_listening">Yabancı Dil Dinleme</option>
+    </optgroup>
+    <optgroup label="── Sosyal ──">
+      <option value="crowd">Kalabalık</option>
+      <option value="public_speaking">Topluluk Önünde Konuşma</option>
+      <option value="social_anxiety">Sosyal Anksiyete</option>
+      <option value="empathy">Empati / Başkasını Anlama</option>
+      <option value="conflict">Çatışma / Tartışma</option>
+      <option value="intimacy">Yakınlık / Bağ Kurma</option>
+    </optgroup>
+    <optgroup label="── Klinik ──">
+      <option value="depressed">Depresif</option>
+      <option value="anxious">Anksiyete Atağı</option>
+      <option value="panic">Panik Atağı</option>
+      <option value="manic">Manik Epizod</option>
+      <option value="dissociation">Dissosiyasyon</option>
+      <option value="ocd_loop">OKB Döngüsü</option>
+      <option value="ptsd_trigger">PTSD Tetiklenme</option>
+      <option value="burnout">Tükenmişlik</option>
+      <option value="adhd_scatter">DEHB Dağınıklık</option>
+    </optgroup>
+    <optgroup label="── Fizyolojik ──">
+      <option value="hungry">Açlık</option>
+      <option value="thirsty">Susuzluk</option>
+      <option value="exercise">Egzersiz</option>
+      <option value="pain">Ağrı</option>
+      <option value="pleasure">Zevk / Haz</option>
+      <option value="music">Müzik Dinleme</option>
+      <option value="orgasm">Orgazm</option>
+      <option value="drunk">Alkol Etkisi</option>
+      <option value="caffeine">Kafein Etkisi</option>
+      <option value="meditation">Meditasyon</option>
+      <option value="cold_shower">Soğuk Duş</option>
+      <option value="fever">Ateş / Hastalık</option>
+    </optgroup>
+  </select>
+  <button class="btn" id="applymode">UYGULA</button>
+  <hr style="border-color:var(--border);margin:7px 0">
+  <div class="ptitle">// MİYOPİ</div>
+  <div class="mrow">
+    <input type="number" id="myopia-now" value="0" step="0.25" placeholder="Derece">
+    <input type="number" id="myopia-years" value="0" placeholder="Yıl">
+  </div>
+  <button class="btn btn2" id="applymyopia">GÜNCELLEŞTİR</button>
+</div>
+<button class="ptg" id="tg-mode" style="bottom:14px;left:230px">✕</button>
+
+<div id="wlabel">◈ Alfa (8–13 Hz) baskın</div>
+
+<div class="panel" id="pq">
+  <div style="font-size:10px;letter-spacing:2px;color:var(--accent);margin-bottom:8px;text-transform:uppercase">// Nörodiverjans Değerlendirmesi</div><div style="font-size:10px;color:var(--dim);margin-bottom:4px">60 soru · DSM-5 / ICD-11 temelli</div>
+  <div style="font-size:10px;color:var(--dim);margin-bottom:7px">0 = hiç yaşamam · 100 = her zaman yaşarım</div>
+  El: <select id="handedness" style="width:auto;margin-bottom:7px">
+    <option value="right">Sağ</option><option value="left">Sol</option><option value="ambidextrous">Çift</option>
+  </select>
+
+  <div class="qg"><div class="qgt">SOSYAL İLETİŞİM & EMPATİ (ASD-SCQ)</div>
+    <div class="sr"><label>Göz teması kurmaktan kaçınırım</label><input type="range" min="0" max="100" value="25" id="q1"></div>
+    <div class="sr"><label>Sohbet başlatmak veya sürdürmek zorlaşır</label><input type="range" min="0" max="100" value="30" id="q2"></div>
+    <div class="sr"><label>İnce espri, metafor veya kinayeyi anlamak güç gelir</label><input type="range" min="0" max="100" value="20" id="q3"></div>
+    <div class="sr"><label>Kalabalık sosyal ortamlarda çabuk tükenirim</label><input type="range" min="0" max="100" value="40" id="q4"></div>
+    <div class="sr"><label>Başkasının yüz ifadesinden ne hissettiğini anlamak zor</label><input type="range" min="0" max="100" value="15" id="q5"></div>
+    <div class="sr"><label>Sosyal kurallar ve nezaket kalıpları kafa karıştırıcı gelir</label><input type="range" min="0" max="100" value="18" id="q6"></div>
+    <div class="sr"><label>Grup konuşmalarına doğal zamanlarda katılmakta zorlanırım</label><input type="range" min="0" max="100" value="22" id="q7"></div>
+    <div class="sr"><label>Arkadaşlık ilişkilerini başlatmak veya korumak güçtür</label><input type="range" min="0" max="100" value="25" id="q8"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">RUTİN, TEKRAR & ÖZEL İLGİ (ASD-RRB)</div>
+    <div class="sr"><label>Günlük planım beklenmedik şekilde değişince yoğun rahatsızlık hissederim</label><input type="range" min="0" max="100" value="35" id="q9"></div>
+    <div class="sr"><label>Aynı hareketleri, sözleri veya rutinleri tekrarlarım</label><input type="range" min="0" max="100" value="15" id="q10"></div>
+    <div class="sr"><label>Eşyalar her zaman aynı yerde olmalıdır</label><input type="range" min="0" max="100" value="30" id="q11"></div>
+    <div class="sr"><label>Belirli bir konuya yoğun ve derin ilgi duyar, başka her şeyi göz ardı ederim</label><input type="range" min="0" max="100" value="45" id="q12"></div>
+    <div class="sr"><label>Yeni ortamlara veya değişikliklere uyum sağlamak zaman alır</label><input type="range" min="0" max="100" value="35" id="q13"></div>
+    <div class="sr"><label>Belirli hareketleri (sallama, döndürme vb.) tekrarlamak rahatlatır</label><input type="range" min="0" max="100" value="12" id="q14"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">DUYUSAL İŞLEME (SPD/ASD)</div>
+    <div class="sr"><label>Parlak veya titreyen ışıklar rahatsız eder</label><input type="range" min="0" max="100" value="30" id="q15"></div>
+    <div class="sr"><label>Belirli sesler (elektrik sesi, kalabalık vb.) dayanılmaz gelir</label><input type="range" min="0" max="100" value="35" id="q16"></div>
+    <div class="sr"><label>Kıyafet etiketleri, dikişler veya bazı kumaş dokuları rahatsız eder</label><input type="range" min="0" max="100" value="20" id="q17"></div>
+    <div class="sr"><label>Koku veya tatlara aşırı tepki veririm; bazıları tahammül edilemez</label><input type="range" min="0" max="100" value="15" id="q18"></div>
+    <div class="sr"><label>Beklenmedik dokunuşlar veya kalabalıkta bedeni sıkışmak rahatsız eder</label><input type="range" min="0" max="100" value="25" id="q19"></div>
+    <div class="sr"><label>Gürültülü ortamlarda odaklanmak neredeyse imkânsızdır</label><input type="range" min="0" max="100" value="40" id="q20"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">DİKKAT & YÜRÜTÜCÜ İŞLEV (ADHD-DSM5)</div>
+    <div class="sr"><label>Başladığım işleri bitirmekte zorlanırım; dikkatim dağılır</label><input type="range" min="0" max="100" value="50" id="q21"></div>
+    <div class="sr"><label>Ders, kitap veya uzun metin okurken dikkatimi sürdürmek güçtür</label><input type="range" min="0" max="100" value="50" id="q22"></div>
+    <div class="sr"><label>Yerimde oturmak zorundayken kıpırdanır veya yerimi terk ederim</label><input type="range" min="0" max="100" value="30" id="q23"></div>
+    <div class="sr"><label>Sıra beklemek veya gecikmeye katlanmak çok güç</label><input type="range" min="0" max="100" value="35" id="q24"></div>
+    <div class="sr"><label>Eşyaları, randevuları veya görevleri sık sık kaybeder/unuturum</label><input type="range" min="0" max="100" value="45" id="q25"></div>
+    <div class="sr"><label>Düşünmeden konuşur, cümle bitmeden araya girerim</label><input type="range" min="0" max="100" value="25" id="q26"></div>
+    <div class="sr"><label>Zaman yönetimi zayıftır; zaman kavramı çarpık hissedilebilir</label><input type="range" min="0" max="100" value="55" id="q27"></div>
+    <div class="sr"><label>Çoklu görevleri önceliklendirmek ve organize etmek zorlaşır</label><input type="range" min="0" max="100" value="48" id="q28"></div>
+    <div class="sr"><label>Başlamak kolay ama sürdürmek çok güçtür (aktivasyon sorunu)</label><input type="range" min="0" max="100" value="52" id="q29"></div>
+    <div class="sr"><label>Karar vermek bunaltıcı gelebilir; küçük seçimler bile yorar</label><input type="range" min="0" max="100" value="40" id="q30"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">DUYGUDURUM & DUYGUSAL DÜZENLEYİM (PHQ-9/GAD-7)</div>
+    <div class="sr"><label>Son iki haftada enerji düşüklüğü, isteksizlik ve keyifsizlik yaşadım</label><input type="range" min="0" max="100" value="20" id="q31"></div>
+    <div class="sr"><label>Sevdiğim etkinliklerden artık keyif almıyorum</label><input type="range" min="0" max="100" value="18" id="q32"></div>
+    <div class="sr"><label>Gelecekle ilgili umutsuzluk veya çaresizlik hissediyorum</label><input type="range" min="0" max="100" value="22" id="q33"></div>
+    <div class="sr"><label>Sürekli endişe, gerginlik veya huzursuzluk var</label><input type="range" min="0" max="100" value="28" id="q34"></div>
+    <div class="sr"><label>Aşırı öfke patlamaları veya duygusal taşmalar yaşıyorum</label><input type="range" min="0" max="100" value="20" id="q35"></div>
+    <div class="sr"><label>Duygusal tepkilerim durumla orantısız yoğunlukta olabiliyor</label><input type="range" min="0" max="100" value="30" id="q36"></div>
+    <div class="sr"><label>Kendimi boşlukta, anlamsız veya kopuk hissediyorum</label><input type="range" min="0" max="100" value="22" id="q37"></div>
+    <div class="sr"><label>Küçük eleştiriler veya hayal kırıklıkları aşırı etkileyebilir (RSD)</label><input type="range" min="0" max="100" value="35" id="q38"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">MANİ & HİPOMANİ (MDQ/HCL-32)</div>
+    <div class="sr"><label>Son dönemde çok az uyku ihtiyacı duyarak yüksek enerjili hissettim</label><input type="range" min="0" max="100" value="10" id="q39"></div>
+    <div class="sr"><label>Düşüncelerim çok hızlı akar, fikirler birbiri ardına gelir</label><input type="range" min="0" max="100" value="25" id="q40"></div>
+    <div class="sr"><label>Risk alma, büyük harcamalar veya ölçüsüz kararlar veririm</label><input type="range" min="0" max="100" value="15" id="q41"></div>
+    <div class="sr"><label>Kendimi özel, çok yetenekli veya vazgeçilmez hissederim</label><input type="range" min="0" max="100" value="12" id="q42"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">ANKSIYETE & PANIK (PDSS/STAI)</div>
+    <div class="sr"><label>Ani kalp çarpıntısı, nefes darlığı veya sersemlik ile gelen korku atakları</label><input type="range" min="0" max="100" value="15" id="q43"></div>
+    <div class="sr"><label>Belirli yerlere veya durumlardan kaçınıyorum (fobik kaçınma)</label><input type="range" min="0" max="100" value="20" id="q44"></div>
+    <div class="sr"><label>Sürekli kötü bir şey olacakmış gibi hissediyorum</label><input type="range" min="0" max="100" value="25" id="q45"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">ÇALIŞMA BELLEĞİ & BİLİŞ</div>
+    <div class="sr"><label>Kısa süre önce okuduğumu veya duyduğumu hemen unutabilirim</label><input type="range" min="0" max="100" value="35" id="q46"></div>
+    <div class="sr"><label>Zihnimde birden fazla bilgiyi aynı anda tutmak zorlaşır</label><input type="range" min="0" max="100" value="40" id="q47"></div>
+    <div class="sr"><label>Uyku düzenim sürekli bozuktur (geç uyuma, erken uyanma vb.)</label><input type="range" min="0" max="100" value="45" id="q48"></div>
+    <div class="sr"><label>Hayal kurmaya dalar ve çevreyi fark etmemeye başlarım (maladaptive daydreaming)</label><input type="range" min="0" max="100" value="50" id="q49"></div>
+    <div class="sr"><label>İç sesim çok yoğundur; zihin sürekli "gevezelik" yapar</label><input type="range" min="0" max="100" value="55" id="q50"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">MOTOR & FİZİKSEL</div>
+    <div class="sr"><label>Koordinasyon güçlüğü, düşme veya nesnelere çarpma (DCD)</label><input type="range" min="0" max="100" value="18" id="q51"></div>
+    <div class="sr"><label>Ince motor becerilerde (yazı yazma, düğme ilikleme) zorlanırım</label><input type="range" min="0" max="100" value="15" id="q52"></div>
+    <div class="sr"><label>Vücudun nerede olduğuna dair farkındalık (propriosepsiyon) zayıftır</label><input type="range" min="0" max="100" value="12" id="q53"></div>
+    <div class="sr"><label>Stresli durumlarda tic, stereotip hareket veya stimming yaparım</label><input type="range" min="0" max="100" value="20" id="q54"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">EMPATİ & ZİHİN KURAMI</div>
+    <div class="sr"><label>Başkalarının bakış açısından olayı görmek çaba gerektirir</label><input type="range" min="0" max="100" value="20" id="q55"></div>
+    <div class="sr"><label>Aşırı empati — başkasının acısını sanki kendi acım gibi hissederim</label><input type="range" min="0" max="100" value="55" id="q56"></div>
+    <div class="sr"><label>Başkasının ne düşündüğünü tahmin etmek (zihin okuma) güç gelir</label><input type="range" min="0" max="100" value="18" id="q57"></div>
+  </div>
+
+  <div class="qg"><div class="qgt">MASKELEME & SOSYAL BASKINI</div>
+    <div class="sr"><label>Kendimi "normal" göstermek için büyük çaba harcarım (masking)</label><input type="range" min="0" max="100" value="40" id="q58"></div>
+    <div class="sr"><label>Sosyal durumlarda otomatik pilota geçerim — gerçekte ne hissettiğimi saklarım</label><input type="range" min="0" max="100" value="38" id="q59"></div>
+    <div class="sr"><label>Sosyal etkileşimden sonra derinden yorgun veya "boşalmış" hissederim</label><input type="range" min="0" max="100" value="45" id="q60"></div>
+  </div>
+
+<button class="btn" id="submitall" style="margin-top:9px">BEYNİME İŞLE</button>
+  <div id="diagmsg"></div>
+</div>
+<button class="ptg" id="tg-q" style="bottom:14px;right:290px">✕</button>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://unpkg.com/three@0.157.0/build/three.module.js",
+  "three/addons/":"https://unpkg.com/three@0.157.0/examples/jsm/",
+    "three/addons/loaders/GLTFLoader.js":"https://unpkg.com/three@0.157.0/examples/jsm/loaders/GLTFLoader.js"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {CSS2DRenderer,CSS2DObject} from 'three/addons/renderers/CSS2DRenderer.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+
+function hash(n){const x=Math.sin(n)*43758.5453;return x-Math.floor(x);}
+function noise3(x,y,z){
+  const ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);
+  const fx=x-ix,fy=y-iy,fz=z-iz;
+  const ux=fx*fx*(3-2*fx),uy=fy*fy*(3-2*fy),uz=fz*fz*(3-2*fz);
+  const h=(a,b,c)=>hash(a+b*57+c*113);
+  return h(ix,iy,iz)*(1-ux)*(1-uy)*(1-uz)+h(ix+1,iy,iz)*ux*(1-uy)*(1-uz)
+        +h(ix,iy+1,iz)*(1-ux)*uy*(1-uz)+h(ix+1,iy+1,iz)*ux*uy*(1-uz)
+        +h(ix,iy,iz+1)*(1-ux)*(1-uy)*uz+h(ix+1,iy,iz+1)*ux*(1-uy)*uz
+        +h(ix,iy+1,iz+1)*(1-ux)*uy*uz+h(ix+1,iy+1,iz+1)*ux*uy*uz;
+}
+function fbm(x,y,z,o=4){let v=0,a=.5,f=1;for(let i=0;i<o;i++){v+=a*noise3(x*f,y*f,z*f);a*=.5;f*=2.3;}return v;}
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x040208);
+scene.fog=new THREE.FogExp2(0x060218,0.026);
+
+const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.1,200);
+camera.position.set(0,1,8);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+document.body.appendChild(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(innerWidth,innerHeight);
+labelRenderer.domElement.style.cssText='position:fixed;top:0;left:0;pointer-events:none;z-index:15;';
+document.body.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.06;
+controls.minDistance=0.5;controls.maxDistance=60;
+
+scene.add(new THREE.AmbientLight(0x200a18,.8));
+const dl1=new THREE.DirectionalLight(0xffc8d8,1.6);dl1.position.set(4,5,3);scene.add(dl1);
+const dl2=new THREE.DirectionalLight(0x88aaff,.7);dl2.position.set(-3,-2,-2);scene.add(dl2);
+const pl1=new THREE.PointLight(0xff4466,1.0,24);pl1.position.set(0,-5,0);scene.add(pl1);
+const pl2=new THREE.PointLight(0xffe8d0,.5,20);pl2.position.set(0,8,0);scene.add(pl2);
+
+const brainG=new THREE.Group(),regionG=new THREE.Group(),
+      synapseG=new THREE.Group(),vesselG=new THREE.Group(),waveG=new THREE.Group();
+brainG.add(regionG,synapseG,vesselG,waveG);
+scene.add(brainG);
+
+const regionMeshes=[],vesselMeshes=[],synapticPts=[],synapseMeshes=[];
+let connectionList=[],CENTER=[0,0,0],BRAIN_R=2,REGION_SCALE=0.095;
+
+// ── BRAIN MODEL (GLB) ───────────────────────────────────
+
+let brainModelLoaded=false;
+
+async function loadBrainGLB(){
+  return new Promise((resolve,reject)=>{
+    const loader=new GLTFLoader();
+    loader.load('http://localhost:5002/brain.glb',
+      (gltf)=>{
+        const model=gltf.scene;
+
+        // Auto-compute bounding box to find scale + center
+        const box=new THREE.Box3().setFromObject(model);
+        const size=new THREE.Vector3();
+        box.getSize(size);
+        const center=new THREE.Vector3();
+        box.getCenter(center);
+
+        // Scale so longest axis = 4 units (good visible size)
+        const maxDim=Math.max(size.x,size.y,size.z);
+        const targetSize=4.0;
+        const scaleFactor=targetSize/maxDim;
+        model.scale.setScalar(scaleFactor);
+
+        // Center it
+        const centScaled=center.clone().multiplyScalar(scaleFactor);
+        model.position.sub(centScaled);
+        
+        // Update BRAIN_R and REGION_SCALE to match actual model size
+        BRAIN_R=targetSize*0.5;
+        // MNI coords range ~100mm, we want them to fit inside BRAIN_R
+        // max MNI coord from center is ~70mm, target = BRAIN_R*0.85
+        REGION_SCALE = (BRAIN_R*0.85) / 70.0;
+
+        // Apply material — translucent pink with proper shading
+        model.traverse(child=>{
+          if(child.isMesh){
+            child.material=new THREE.MeshStandardMaterial({
+              color:new THREE.Color(0xe8a0a0),
+              roughness:0.68,
+              metalness:0.04,
+              transparent:true,
+              opacity:0.45,
+              side:THREE.DoubleSide,
+              depthWrite:false,
+            });
+            child.castShadow=true;
+            child.receiveShadow=true;
+          }
+        });
+
+        brainG.add(model);
+        brainModelLoaded=true;
+        console.log('✅ brain.glb loaded');
+        resolve(model);
+      },
+      (xhr)=>{ console.log('Brain loading: '+(xhr.loaded/xhr.total*100).toFixed(0)+'%'); },
+      (err)=>{
+        console.warn('brain.glb load failed, using fallback geometry',err);
+        // Fallback: simple ellipsoid
+        const geo=new THREE.SphereGeometry(BRAIN_R,64,48);
+        const pos=geo.attributes.position;
+        for(let i=0;i<pos.count;i++){
+          pos.setXYZ(i,pos.getX(i)*1.08,pos.getY(i)*0.88,pos.getZ(i)*0.96);
+        }
+        geo.computeVertexNormals();
+        const mat=new THREE.MeshStandardMaterial({
+          color:0xe8a0a0,roughness:.75,metalness:.03,transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false
+        });
+        brainG.add(new THREE.Mesh(geo,mat));
+        resolve(null);
+      }
+    );
+  });
+}
+
+// Dummy functions kept for compatibility
+function makeWhiteMatter(R){ return new THREE.Group(); }
+function makeGreyMatter(R){ return new THREE.Group(); }
+function makeCerebellum(R){ return new THREE.Group(); }
+function makeBrainStem(R){ return new THREE.Group(); }
+
+// ── VESSELS (tıklanabilir tüpler) ───────────────────────
+const VESSEL_DATA=[
+  {name:'Arteria Cerebri Media',type:'Arter',side:'Bilateral',role:'Lateral korteks, motor/duyusal alan besleme',color:0xdd2233},
+  {name:'Arteria Cerebri Anterior',type:'Arter',side:'Bilateral',role:'Frontal lob ve motor korteks besleme',color:0xcc1122},
+  {name:'Arteria Cerebri Posterior',type:'Arter',side:'Bilateral',role:'Oksipital lob ve görsel korteks besleme',color:0xbb1111},
+  {name:'Sinus Sagittalis Superior',type:'Ven',side:'Merkez',role:'Ana venöz drenaj sinüsü',color:0x2255cc},
+  {name:'Vena Cerebri Magna',type:'Ven',side:'İç',role:'Derin serebral venöz drenaj',color:0x3366dd},
+  {name:'Arteria Basilaris',type:'Arter',side:'Posterior',role:'Beyin sapı ve serebellum besleme',color:0xee3344},
+];
+
+function makeVessels(R){
+  while(vesselG.children.length)vesselG.remove(vesselG.children[0]);
+  vesselMeshes.length=0;
+  const TR=R*0.018; // tube radius scaled to brain
+
+  // Arterler - beyin yüzeyine yapışık, yarı saydam
+  const arterDefs=[
+    {ax:new THREE.Vector3(0,0,1),off:0,      r:R*.88,ys:.60,vi:0},
+    {ax:new THREE.Vector3(0,0,1),off:.20*Math.PI,r:R*.84,ys:.55,vi:1},
+    {ax:new THREE.Vector3(0,0,1),off:-.20*Math.PI,r:R*.82,ys:.52,vi:2},
+    {ax:new THREE.Vector3(1,0,0),off:0,      r:R*.86,ys:.65,vi:0},
+    {ax:new THREE.Vector3(1,0,0),off:.18*Math.PI,r:R*.83,ys:.58,vi:1},
+  ];
+  arterDefs.forEach(({ax,off,r,ys,vi})=>{
+    const pts=[];
+    for(let i=0;i<=60;i++){
+      const t=(i/60)*Math.PI*2,q=new THREE.Quaternion().setFromAxisAngle(ax,off);
+      const v=new THREE.Vector3(Math.cos(t)*r,Math.sin(t)*r*ys,0).applyQuaternion(q);
+      pts.push(v);
+    }
+    const geo=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),60,TR,5,true);
+    const mat=new THREE.MeshStandardMaterial({
+      color:0xdd2233,roughness:.5,metalness:.1,
+      transparent:true,opacity:.55,depthWrite:false
+    });
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.userData={type:'vessel',...VESSEL_DATA[vi]};
+    vesselG.add(mesh);vesselMeshes.push(mesh);
+  });
+
+  // Venler
+  [{ax:new THREE.Vector3(0,1,0),off:0,r:R*.90,vi:3},
+   {ax:new THREE.Vector3(0,1,0),off:.28*Math.PI,r:R*.87,vi:4}].forEach(({ax,off,r,vi})=>{
+    const pts=[];
+    for(let i=0;i<=60;i++){
+      const t=(i/60)*Math.PI*2,q=new THREE.Quaternion().setFromAxisAngle(ax,off);
+      const v=new THREE.Vector3(Math.cos(t)*r,0,Math.sin(t)*r).applyQuaternion(q);
+      pts.push(v);
+    }
+    const geo=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),60,TR*.85,5,true);
+    const mat=new THREE.MeshStandardMaterial({
+      color:0x2255cc,roughness:.5,metalness:.1,
+      transparent:true,opacity:.50,depthWrite:false
+    });
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.userData={type:'vessel',...VESSEL_DATA[vi]};
+    vesselG.add(mesh);vesselMeshes.push(mesh);
+  });
+
+  // Arteria Basilaris
+  const bsPts=[];
+  for(let i=0;i<=20;i++){const t=i/20;bsPts.push(new THREE.Vector3(0,-R*.82-t*R*.35,R*.05));}
+  const bm=new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(bsPts),20,TR*1.2,6,false),
+    new THREE.MeshStandardMaterial({color:0xee3344,roughness:.5,transparent:true,opacity:.60,depthWrite:false})
+  );
+  bm.userData={type:'vessel',...VESSEL_DATA[5]};vesselG.add(bm);vesselMeshes.push(bm);
+
+  // Kapillerler - ince, içeride
+  for(let i=0;i<60;i++){
+    const th=Math.random()*Math.PI,ph=Math.random()*Math.PI*2;
+    const origin=new THREE.Vector3(Math.sin(th)*Math.cos(ph),Math.cos(th),Math.sin(th)*Math.sin(ph)).multiplyScalar(R*.75);
+    const pts=[origin.clone()];
+    let dir=new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize();
+    for(let s=0;s<5;s++){
+      dir.add(new THREE.Vector3((Math.random()-.5)*.3,(Math.random()-.5)*.3,(Math.random()-.5)*.3)).normalize();
+      pts.push(origin.clone().add(dir.clone().multiplyScalar((s+1)*.07)));
+    }
+    vesselG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:Math.random()>.4?0xdd3344:0x3355cc,transparent:true,opacity:.15+Math.random()*.12})));
+  }
+}
+
+// ── SİNÜS DALGA HALKALARI ───────────────────────────────
+const waveRings=[];
+function makeWaveRings(R){
+  while(waveG.children.length)waveG.remove(waveG.children[0]);
+  waveRings.length=0;
+  for(let k=0;k<7;k++){
+    const pts=[];
+    for(let i=0;i<=120;i++){
+      const theta=(i/120)*Math.PI*2;
+      // Sinüs dalgası profili: y = sin(theta * harmonik) * genlik
+      const harmonic=2+k*.5;
+      const yOff=Math.sin(theta*harmonic)*.12;
+      pts.push(new THREE.Vector3(Math.cos(theta),yOff,Math.sin(theta)));
+    }
+    const geo=new THREE.BufferGeometry().setFromPoints(pts);
+    const mat=new THREE.LineBasicMaterial({
+      color:new THREE.Color().setHSL(.9+k*.015,1,.6),
+      transparent:true,opacity:0,blending:THREE.AdditiveBlending
+    });
+    const ring=new THREE.Line(geo,mat);
+    ring.userData={phase:k/7,baseR:R,harmonic:2+k*.5};
+    waveG.add(ring);waveRings.push(ring);
+  }
+}
+
+const WAVE_INFO={
+  relaxed:{col:[.27,.67,1],name:'Alfa (8–13 Hz)',freq:10},
+  morning_wake:{col:[1,.67,.27],name:'Beta (13–30 Hz)',freq:18},
+  sleepy:{col:[.53,.53,.8],name:'Teta (4–8 Hz)',freq:6},
+  bored:{col:[.5,.5,.7],name:'Alfa (8–13 Hz)',freq:9},
+  yawning:{col:[.45,.45,.65],name:'Teta (4–8 Hz)',freq:5},
+  happy:{col:[1,.85,.2],name:'Alfa (8–13 Hz)',freq:11},
+  sad:{col:[.35,.45,.7],name:'Alfa–Teta',freq:7},
+  angry:{col:[1,.13,0],name:'Beta (13–30 Hz)',freq:25},
+  fear:{col:[1,.13,.67],name:'Gamma (30–100 Hz)',freq:45},
+  love:{col:[1,.27,.67],name:'Alfa (8–13 Hz)',freq:10},
+  jealous:{col:[.6,.8,.2],name:'Beta (13–30 Hz)',freq:18},
+  grief:{col:[.3,.3,.55],name:'Teta (4–8 Hz)',freq:5},
+  excited:{col:[1,.75,.1],name:'Beta yüksek',freq:28},
+  nostalgic:{col:[.7,.5,.8],name:'Alfa (8–13 Hz)',freq:9},
+  lonely:{col:[.4,.4,.65],name:'Alfa–Teta',freq:8},
+  proud:{col:[1,.8,.3],name:'Beta (13–30 Hz)',freq:16},
+  shame:{col:[.6,.2,.3],name:'Beta (13–30 Hz)',freq:20},
+  disgust:{col:[.5,.7,.2],name:'Beta (13–30 Hz)',freq:17},
+  awe:{col:[.5,.8,1],name:'Gama (30–100 Hz)',freq:35},
+  active_study:{col:[1,.4,0],name:'Beta (13–30 Hz)',freq:20},
+  creative:{col:[1,.27,.8],name:'Alfa (8–13 Hz)',freq:11},
+  problem_solving:{col:[1,.6,.1],name:'Beta yüksek',freq:24},
+  reading:{col:[.6,.8,.9],name:'Alfa (8–13 Hz)',freq:10},
+  daydreaming:{col:[.7,.6,.9],name:'Alfa–Teta',freq:8},
+  flow:{col:[.3,.9,.7],name:'Teta (4–8 Hz)',freq:6},
+  hyperfocus:{col:[1,.5,.0],name:'Beta yüksek',freq:26},
+  mind_wandering:{col:[.6,.5,.8],name:'Alfa (8–13 Hz)',freq:9},
+  decision_making:{col:[1,.7,.2],name:'Beta (13–30 Hz)',freq:22},
+  multitasking:{col:[1,.5,.3],name:'Beta yüksek',freq:27},
+  crowd:{col:[1,.47,.13],name:'Beta (13–30 Hz)',freq:22},
+  public_speaking:{col:[1,.3,.1],name:'Beta yüksek',freq:28},
+  social_anxiety:{col:[.9,.2,.5],name:'Beta yüksek',freq:30},
+  empathy:{col:[1,.6,.8],name:'Alfa (8–13 Hz)',freq:10},
+  conflict:{col:[1,.2,.1],name:'Beta yüksek',freq:26},
+  intimacy:{col:[1,.5,.7],name:'Alfa (8–13 Hz)',freq:10},
+  depressed:{col:[.4,.47,.67],name:'Alfa–Teta',freq:7},
+  anxious:{col:[.9,.3,.5],name:'Beta yüksek',freq:28},
+  panic:{col:[1,.1,.3],name:'Gamma (30–100 Hz)',freq:40},
+  manic:{col:[1,.9,.1],name:'Beta yüksek',freq:30},
+  dissociation:{col:[.5,.5,.9],name:'Teta (4–8 Hz)',freq:5},
+  ocd_loop:{col:[.8,.4,.9],name:'Beta (13–30 Hz)',freq:20},
+  ptsd_trigger:{col:[1,.1,.1],name:'Gamma (30–100 Hz)',freq:42},
+  burnout:{col:[.5,.4,.4],name:'Alfa–Teta',freq:7},
+  adhd_scatter:{col:[.9,.6,.1],name:'Beta (13–30 Hz)',freq:22},
+  hungry:{col:[1,.6,.27],name:'Beta (13–30 Hz)',freq:15},
+  thirsty:{col:[.4,.7,1],name:'Beta (13–30 Hz)',freq:16},
+  exercise:{col:[1,.67,0],name:'Beta (13–30 Hz)',freq:22},
+  pain:{col:[.9,.1,.2],name:'Gamma (30–100 Hz)',freq:38},
+  pleasure:{col:[1,.8,.4],name:'Alfa (8–13 Hz)',freq:11},
+  music:{col:[.67,.27,1],name:'Alfa (8–13 Hz)',freq:10},
+  orgasm:{col:[1,.4,.6],name:'Gamma (30–100 Hz)',freq:40},
+  drunk:{col:[.8,.53,1],name:'Delta (0.5–4 Hz)',freq:2},
+  caffeine:{col:[.9,.7,.1],name:'Beta (13–30 Hz)',freq:20},
+  meditation:{col:[.27,1,.73],name:'Teta (4–8 Hz)',freq:5},
+  cold_shower:{col:[.2,.8,1],name:'Beta (13–30 Hz)',freq:20},
+  fever:{col:[1,.4,.2],name:'Beta (13–30 Hz)',freq:18},
+  n1_sleep:{col:[.5,.6,.9],name:'Teta (4–8 Hz)',freq:6},
+  n2_sleep:{col:[.35,.45,.8],name:'Uyku İğcikleri (12–15 Hz)',freq:13},
+  n3_sleep:{col:[.2,.3,.7],name:'Delta (0.5–4 Hz)',freq:2},
+  rem_sleep:{col:[.8,.4,.9],name:'Teta + hızlı göz',freq:7},
+  lucid_dream:{col:[.6,.2,1],name:'Gama (30–100 Hz)',freq:40},
+  sleep_paralysis:{col:[.3,.1,.5],name:'REM atoni',freq:7},
+  hypnagogia:{col:[.45,.5,.85],name:'Alfa–Teta geçiş',freq:8},
+  foreign_speaking:{col:[.2,.95,.6],name:'Beta (13–30 Hz)',freq:22},
+  foreign_listening:{col:[.2,.8,.5],name:'Beta (13–30 Hz)',freq:18},
+};
+let currentWave=WAVE_INFO.relaxed;
+function setWave(mode){
+  currentWave=WAVE_INFO[mode]||WAVE_INFO.relaxed;
+  document.getElementById('wlabel').textContent=`◈ ${currentWave.name} baskın`;
+}
+
+function animateWaves(t){
+  const {col,freq}=currentWave;
+  waveRings.forEach((ring,k)=>{
+    const ph=ring.userData.phase;
+    // Dalga dışa doğru yayılır: progress 0→1, scale R→R*2.8
+    const progress=((t*freq*.04+ph)%1);
+    const scale=BRAIN_R*(1.05+progress*1.9);
+    const amp=Math.sin(progress*Math.PI); // doğumda ve ölümde sıfır
+    ring.scale.setScalar(scale);
+    ring.material.opacity=amp*(.5-progress*.35);
+    ring.material.color.setRGB(col[0]*.6+amp*.4,col[1]*.6+amp*.35,col[2]*.6+amp*.4);
+    ring.rotation.y=t*.08+ph*1.2;
+    ring.rotation.x=Math.sin(t*.25+ph*Math.PI)*.06;
+    // Sinüs dalgası y genliği moda göre değişiyor
+    const positions=ring.geometry.attributes.position;
+    const harm=ring.userData.harmonic;
+    for(let i=0;i<=120;i++){
+      const theta=(i/120)*Math.PI*2;
+      const yOff=Math.sin(theta*harm+t*freq*.5)*(.10+amp*.12);
+      positions.setXYZ(i,Math.cos(theta),yOff,Math.sin(theta));
+    }
+    positions.needsUpdate=true;
+  });
+}
+
+// ── REGION DATA ─────────────────────────────────────────
+// ── NÖROTRANSMITTER & BÖLGE BİLGİ VERİTABANI ───────────
+
+const NEUROTRANSMITTER_DB={
+  Dopamin:{
+    color:'#44ff88',
+    sistem:'Mezokortikal, Mezolimbik, Nigrostriatal, Tüberoinfundibüler',
+    etki:'Ödül, motivasyon, öğrenme, motor kontrol, dikkat',
+    eksiklik:'Parkinson hastalığı, depresyon, anhedoni, dikkat eksikliği',
+    fazlalık:'Şizofreni pozitif belirtileri, mani, psikoz',
+    ilaçlar:'L-DOPA, Dopamin agonistleri, Antipsikotikler (D2 antagonisti)'
+  },
+  Serotonin:{
+    color:'#ffee44',
+    sistem:'Raphe-kortikal, Raphe-limbik, Raphe-striatal',
+    etki:'Duygudurum regülasyonu, uyku, iştah, ağrı algısı, sosyal davranış',
+    eksiklik:'Majör depresyon, anksiyete bozuklukları, OKB, migren',
+    fazlalık:'Serotonin sendromu (hipertermi, ajitasyon, tremor)',
+    ilaçlar:'SSRI (Fluoksetin, Sertralin), SNRI, MAO inhibitörleri'
+  },
+  Noradrenalin:{
+    color:'#4488ff',
+    sistem:'Locus coeruleus-kortikal, LC-limbik, LC-spinal',
+    etki:'Dikkat, uyarılma, stres yanıtı, bellek konsolidasyonu, fight-or-flight',
+    eksiklik:'Depresyon, ADHD, hipotansiyon, yorgunluk',
+    fazlalık:'Hipertansiyon, anksiyete, panik atak, insomnia',
+    ilaçlar:'SNRI, NRI (Atomoksetin/ADHD), Beta-blokerler, Klonidin'
+  },
+  Glutamat:{
+    color:'#ff8844',
+    sistem:'Kortikokortikal, Kortikostriatal, Hipokampal',
+    etki:'Ana eksitatör nörotransmitter — öğrenme, bellek, nöroplastisite',
+    eksiklik:'Sedasyon, bilişsel yavaşlama, motor koordinasyon kaybı',
+    fazlalık:'Eksitotoksisite → nöron ölümü (inme, epilepsi, TBI)',
+    ilaçlar:'NMDA antagonistleri (Ketamin, Memantine), Lamotrijin'
+  },
+  GABA:{
+    color:'#aa44ff',
+    sistem:'İnternöronlar, Striatal, Serebellar',
+    etki:'Ana inhibitör nörotransmitter — sakinleşme, anksiyete azaltma, uyku',
+    eksiklik:'Anksiyete, epilepsi, insomnia, spastisite',
+    fazlalık:'Sedasyon, koordinasyon bozukluğu, bellek baskılanması',
+    ilaçlar:'Benzodiazepinler, Barbitüratlar, Gabapentin, Alkol'
+  },
+  Asetilkolin:{
+    color:'#44ffee',
+    sistem:'Bazal ön beyin-kortikal, Nöromüsküler kavşak',
+    etki:'Dikkat, öğrenme, bellek, kas kasılması, REM uykusu',
+    eksiklik:'Alzheimer hastalığı, myastenia gravis, bellek bozukluğu',
+    fazlalık:'Koliner kriz — aşırı ter/salya, kas felci, bradikardi',
+    ilaçlar:'Asetilkolinesteraz inhibitörleri (Donepezil), Atropin'
+  },
+};
+
+const REGION_NEUROTRANSMITTERS={
+  V1_L:['Glutamat','GABA'],V1_R:['Glutamat','GABA'],V2_L:['Glutamat','GABA'],
+  A1_L:['Glutamat','GABA'],A1_R:['Glutamat','GABA'],
+  Broca_L:['Glutamat','GABA','Asetilkolin'],
+  Wernicke_L:['Glutamat','GABA','Asetilkolin'],
+  M1_L:['Glutamat','GABA'],M1_R:['Glutamat','GABA'],
+  S1_L:['Glutamat','GABA'],
+  DLPFC_L:['Dopamin','Glutamat','GABA','Noradrenalin'],
+  DLPFC_R:['Dopamin','Glutamat','GABA','Noradrenalin'],
+  vmPFC:['Serotonin','Dopamin','Glutamat'],
+  ACC:['Dopamin','Serotonin','Glutamat','GABA'],
+  Hippocampus_L:['Glutamat','GABA','Asetilkolin','Serotonin'],
+  Hippocampus_R:['Glutamat','GABA','Asetilkolin','Serotonin'],
+  Amygdala_L:['GABA','Glutamat','Noradrenalin','Dopamin','Serotonin'],
+  Amygdala_R:['GABA','Glutamat','Noradrenalin','Dopamin','Serotonin'],
+  Thalamus_L:['Glutamat','GABA'],Thalamus_R:['Glutamat','GABA'],
+  SN_L:['Dopamin','GABA'],
+  Raphe:['Serotonin','Glutamat','GABA'],
+  LC:['Noradrenalin','Glutamat'],
+  CC_Genu:['Glutamat','GABA'],
+  CC_Body:['Glutamat','GABA'],
+  CC_Splenium:['Glutamat','GABA'],
+  BA47_L:['Glutamat','GABA','Dopamin'],
+  VLPFC_L:['Glutamat','GABA','Dopamin','Noradrenalin'],
+};
+
+const HORMONE_INFO={
+  SN_L:{hormone:'Dopamin',role:'Ödül, motivasyon, hareket kontrolü'},
+  Raphe:{hormone:'Serotonin',role:'Duygudurum, uyku, iştah regülasyonu'},
+  LC:{hormone:'Noradrenalin',role:'Dikkat, uyarılma, stres yanıtı'},
+};
+
+const REGION_DESC={
+  V1_L:`Primer görsel korteks (BA17). Sol hemisfer — sağ görsel alanı işler. Talamustaki Lateral Genikulat Nükleus'tan (LGN) girdi alır. Retinotopik harita içerir: her retina noktası kortekste ayrı bir alana karşılık gelir. Miyopi, uzun süreli görme yoksunluğu veya erken görme bozuklukları bu alanın organizasyonunu değiştirir. Temel özellikler: yönelim seçicilik, spatial frekans işleme, renk opponency.`,
+  V1_R:`Primer görsel korteks (BA17). Sağ hemisfer — sol görsel alanı işler. V1_L ile aynı temel özellikleri paylaşır. İki hemisfer arasındaki görsel bilgi corpus callosum aracılığıyla entegre edilir.`,
+  V2_L:`Sekonder görsel korteks (BA18). V1'den gelen bilgiyi alarak renk, hareket, derinlik ve şekil bilgisini dorsal ("nerede") ve ventral ("ne") akışlarına yönlendirir. İlüzyon algısında kritik rol oynar.`,
+  A1_L:`Primer işitsel korteks (BA41-42). Heschl girüsünde, Sylvian fissürün içinde. Tonotopik organizasyon: düşük frekanslı sesler öne, yüksek frekanslı sesler arkaya haritalanır. Sol hemisfer konuşma sesleri işlemede dominant.`,
+  A1_R:`Primer işitsel korteks, sağ hemisfer. Melodi, prosodi (konuşmanın duygusal tonu) ve müzik işlemede dominant. Tonal dil konuşanların sağ A1'i daha büyüktür.`,
+  Broca_L:`Broca alanı (BA44-45). İnferior frontal girusun pars triangularis ve pars opercularis bölgesi. Konuşma üretimi, dil motorik programlaması, sözdizimsel işleme ve kelime erişimini yönetir. Hasar → ekspresif (Broca) afazi: anlama iyi, üretim bozuk, telgrafik konuşma.`,
+  Wernicke_L:`Wernicke alanı (BA22). Superior temporal girusun arka kısmı. Konuşulan ve yazılan dilin anlama merkezi. Hasar → reseptif (Wernicke) afazi: akıcı ama anlamsız konuşma, parafaziler, anlama bozukluğu. Broca ile arkuat fasikülüs aracılığıyla bağlantılı.`,
+  M1_L:`Primer motor korteks (BA4). Precentral girus. Sol hemisfer → sağ vücut hareketleri. Homünkülüs: ayak yukarıda, el ortada, yüz aşağıda. Her kas grubu için ayrılmış alan var. Piramidal yol (kortikospinal traktus) buradan başlar. Hasarı kontralateral hemipleji yaratır.`,
+  M1_R:`Primer motor korteks, sağ hemisfer. Sol vücut hareketlerini kontrol eder. Sağ M1 sol elde ince motor beceri için daha fazla alan ayırır (el tercihi etkisi).`,
+  S1_L:`Primer somatosensör korteks (BA1-2-3). Postsentral girus. Dokunma, basınç, ağrı, ısı ve propriosepsiyon bilgisini işler. Somatotopik harita M1'e paralel. Talamustaki VPL nükleusundan girdi alır.`,
+  DLPFC_L:`Dorsolateral prefrontal korteks (BA9-46). Yürütücü işlevin kalbi: çalışma belleği, bilişsel esneklik, planlama, karar verme ve dürtü inhibisyonu. Dopamin D1 reseptörleri çalışma belleğini düzenler. ADHD, şizofreni ve depresyonda hipoaktif. Stres altında noradrenalin aşırı salınımı performansı bozar.`,
+  DLPFC_R:`Sağ DLPFC. Sol DLPFC ile birlikte çalışır. Özellikle inhibisyon kontrolü (Go/No-Go görevleri), spatial çalışma belleği ve negatif duygu regülasyonunda dominant.`,
+  vmPFC:`Ventromedial prefrontal korteks (BA10-11-32). Duygusal değer hesaplama, risk-kazanç analizi, ahlaki karar verme ve sosyal biliş. Amigdala aktivasyonunu aşağı regüle eder — duygusal kontrolün merkezî. Iowa Kumar Görevi'nde hasar → risk körlüğü. Serotonin ve dopamin yoğun reseptör ekspresyonu.`,
+  ACC:`Anterior singulat korteks (BA24-32). Dorsal ACC: çatışma monitörizasyonu, hata tespiti, bilişsel kontrol. Ventral ACC: duygusal işleme, ağrı, sosyal acı. fMRI'da sosyal dışlanma fiziksel acıyla aynı ACC aktivasyonu. Depresyonda aşırı aktif — ruminatif düşüncenin kaynağı.`,
+  Hippocampus_L:`Sol hipokampus (CA1-CA3-Dentate Gyrus-Subikulum). Episodik ve semantik bellek konsolidasyonu. Kısa süreli → uzun süreli bellek transferi. Yeni nöron üretimi (nörogenez) yetişkinlikte burada devam eder. Kortizol (stres hormonu) hipokampal nörogenezi baskılar. Alzheimer hastalığı burada başlar.`,
+  Hippocampus_R:`Sağ hipokampus. Uzamsal navigasyon ve yer haritası (place cells). Londra taksi şoförlerinin sağ hipokampusu ortalamadan büyüktür. Sol hipokampusla birlikte hafıza konsolidasyonunda senkronize çalışır.`,
+  Amygdala_L:`Sol amigdala (basolateral, santral, medial nükleus). Korku koşullanması, tehdit tespiti ve duygusal bellek güçlendirmesi. Tehdit algılandığında HPA eksenini (kortizol) ve sempatik sistemi (adrenalin) aktive eder. PTSD'de hiperaktif. Ayrıca pozitif duygu işleme ve sosyal sinyal algılamada rol alır.`,
+  Amygdala_R:`Sağ amigdala. Yüz ifadelerinden duygu okuma ve sosyal tehdit algılamada özelleşmiş. Sol amigdalaya göre daha hızlı, bilinçdışı korku tepkisi üretir.`,
+  Thalamus_L:`Sol talamus. Tüm duyusal modalitelerin (görme hariç koku) kortekse iletildiği ana röle istasyonu. Spesifik nükleus-korteks bağlantıları: VPL → S1, LGN → V1, MGN → A1, MD → PFC. Talamo-kortikal senkronizasyon bilinç ve uyku döngüsünü düzenler. Talamus hasarı → bilinç kaybı.`,
+  Thalamus_R:`Sağ talamus. Sol talamusa ek olarak dikkat yönlendirmesi ve uzamsal işlemede sağ talamus daha dominant.`,
+  SN_L:`Substantia nigra pars compacta. Nigrostriatal dopamin yolunun kaynağı. Striatum'a (kaudat + putamen) dopamin salgılayarak motor öğrenme ve hareket başlatmayı sağlar. Parkinson hastalığında bu nöronların %60-80'i kaybolur → tremor, rijidite, bradikezi. Nöromelanin içermesi nedeniyle siyah görünür (latince: nigra = siyah).`,
+  Raphe:`Raphe çekirdeği (dorsal + median). Beynin serotonin kaynağı — tüm kortekse, limbik sisteme ve spinal korda yayılır. Uyku-uyanıklık siklusunu düzenler (REM baskılama). SSRI antidepresanların hedef sistemi. Psikoaktif maddeler (LSD, psilosibin, MDMA) serotonin sistemini doğrudan etkiler.`,
+  CC_Genu:`Corpus callosum'un ön bölümü (genu). Prefrontal korteksler arasındaki bilgi transferini sağlar. İki hemisfer arasındaki yürütücü işlev koordinasyonunun köprüsü. Kallozal agenezis vakalarında sosyal bilişsel güçlükler görülür.`,
+  CC_Body:`Corpus callosum'un gövdesi. Motor korteksler, somatosensör alanlar ve parietal loblar arasındaki çapraz iletişimi sağlar. Bimanual koordinasyon (iki elle aynı anda çalışma) için kritik.`,
+  CC_Splenium:`Corpus callosum'un arka bölümü (splenium). Görsel korteksler, hipokampus ve oksipital alanlar arasındaki bağlantıyı kurar. Dislekside splenium hacmi azalmış bulunur.`,
+  BA47_L:`Brodmann Alanı 47 — İnferior Frontal Girus'un pars orbitalis bölümü. İkinci dil (L2) ediniminde kritik: ana dile ek olarak yabancı dil gramer işleme ve sözcük erişiminde özelleşmiş. Erken yaşta dil öğrenenlerde Broca ile örtüşür; geç öğrenenlerde bu alan belirgin şekilde aktive olur.`,
+  VLPFC_L:`Ventrolateral Prefrontal Korteks. Dil inhibisyonu — bir dili konuşurken diğer dili bastırma (dil kontrolü). Çok dilli bireylerde sürekli aktif: yanlış dile geçişi önler. Dil geçişi (code-switching) sırasında aktivasyon zirveye ulaşır.`,
+  LC:`Locus coeruleus (mavi nokta). Beynin tek noradrenerjik kaynağı — tüm korteks, serebellum ve spinal korda noradrenalin salgılar. Tehdit/yenilik durumlarında patlama tarzı ateşleme → dikkat ve uyarılma. Stres altında kronik aktivasyon → anksiyete bozuklukları. Uyku sırasında tamamen sessizleşir.`,
+};
+
+function makeNode(id,r,act){
+  const [cx,cy,cz]=CENTER;
+  // MNI → Three.js: x=LR, y=SI(up), z=AP(depth, flipped)
+  const mni_x=r.coords[0],mni_y=r.coords[1],mni_z=r.coords[2];
+  const cx2=CENTER[0],cy2=CENTER[2],cz2=CENTER[1]; // center remapped
+  const x=(mni_x-CENTER[0])*REGION_SCALE;
+  const y=(mni_z-CENTER[2])*REGION_SCALE;   // SI = up
+  const z=-(mni_y-CENTER[1])*REGION_SCALE;  // AP flipped = depth
+  const c=new THREE.Color(r.base_color[0],r.base_color[1],r.base_color[2]);
+  const mat=new THREE.MeshStandardMaterial({color:c,emissive:c.clone().multiplyScalar(.5),roughness:.3,metalness:.15,transparent:true,opacity:.95});
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(.20,16,12),mat);
+  mesh.position.set(x,y,z);
+  const rm=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.6});
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.27,.020,7,24),rm);
+  ring.rotation.x=Math.PI/2;mesh.add(ring);
+  const div=document.createElement('div');
+  div.textContent=id.replace(/_[LR]$/,'');
+  div.style.cssText='color:#ffcce0;font-size:9px;font-family:"Share Tech Mono",monospace;font-weight:bold;text-shadow:0 0 4px #000;pointer-events:none;white-space:nowrap;';
+  mesh.add(new CSS2DObject(div));
+  mesh.userData={type:'region',id,name:r.name,lobe:r.lobe,baseColor:r.base_color,activity:act,ring,rm};
+  return mesh;
+}
+
+function updateRegions(activities){
+  regionMeshes.forEach(m=>{
+    if(activities)m.userData.activity=activities[m.userData.id]??m.userData.activity;
+    const a=m.userData.activity,bc=m.userData.baseColor;
+    const r=Math.min(1,bc[0]*.35+a*.85+.15),g=Math.min(1,bc[1]*.35+a*.4),b=Math.min(1,bc[2]*.35+(1-a)*.6);
+    m.material.color.setRGB(r,g,b);m.material.emissive.setRGB(r*a*.9,g*a*.5,b*a*.2);
+    m.userData.rm.opacity=.2+a*.75;m.userData.ring.scale.setScalar(.9+a*.35);
+  });
+}
+
+function buildSynapses(){
+  while(synapseG.children.length)synapseG.remove(synapseG.children[0]);
+  synapticPts.length=0;
+  synapseMeshes.length=0;
+  connectionList.forEach(([sId,tId,str])=>{
+    const sM=regionMeshes.find(m=>m.userData.id===sId),tM=regionMeshes.find(m=>m.userData.id===tId);
+    if(!sM||!tM)return;
+    const mid=sM.position.clone().lerp(tM.position,.5);mid.y+=.3+str*.5;
+    const curve=new THREE.QuadraticBezierCurve3(sM.position.clone(),mid,tM.position.clone());
+    // Görünür ince çizgi
+    const synLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(40)),
+      new THREE.LineBasicMaterial({color:new THREE.Color(1,.7,.4),transparent:true,opacity:0.6+str*.3,blending:THREE.AdditiveBlending,depthTest:false}));
+    synapseG.add(synLine);
+
+    // Görünmez ama geniş tıklanabilir tüp (tube üzerine şeffaf mesh)
+    const hitGeo=new THREE.TubeGeometry(curve,20,0.18,4,false);
+    const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false});
+    const hitMesh=new THREE.Mesh(hitGeo,hitMat);
+    hitMesh.userData={type:'synapse',src:sId,tgt:tId,strength:str,
+      srcName:sM.userData.name,tgtName:tM.userData.name};
+    synapseG.add(hitMesh);synapseMeshes.push(hitMesh);
+    for(let p=0;p<3;p++){
+      const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(new Float32Array([0,0,0]),3));
+      const pm=new THREE.Points(pg,new THREE.PointsMaterial({color:0xffdd44,size:.18,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false}));
+      pm.userData={curve,progress:Math.random(),speed:.25+str*.35};
+      synapseG.add(pm);synapticPts.push(pm);
+    }
+  });
+}
+
+function animateSynapses(dt){
+  synapticPts.forEach(p=>{
+    p.userData.progress+=dt*p.userData.speed;if(p.userData.progress>1)p.userData.progress-=1;
+    const pt=p.userData.curve.getPoint(p.userData.progress);
+    p.geometry.attributes.position.setXYZ(0,pt.x,pt.y,pt.z);p.geometry.attributes.position.needsUpdate=true;
+    const br=Math.sin(p.userData.progress*Math.PI);
+    p.material.color.setHSL(.06+p.userData.progress*.04,1,.2+br*.4);p.material.size=.04+br*.09;
+  });
+}
+
+// ── DETAIL PANEL ────────────────────────────────────────
+function showDetail(obj){
+  const p=document.getElementById('pdetail');
+  p.style.display='block';
+  const ud=obj.userData;
+
+  if(ud.type==='region'){
+    document.getElementById('det-typelabel').textContent='// BEYİN BÖLGESİ';
+    document.getElementById('det-title').textContent=ud.name||'—';
+    document.getElementById('det-type').textContent=(ud.lobe||'').toUpperCase();
+    const pct=Math.round(ud.activity*100);
+    const bc=ud.baseColor;
+    const col=`rgb(${Math.round(bc[0]*255)},${Math.round(bc[1]*255)},${Math.round(bc[2]*255)})`;
+    document.getElementById('det-bar').style.cssText=`width:${pct}%;background:linear-gradient(90deg,${col}66,${col})`;
+
+    // Nörotransmitter etiketleri
+    const nts=REGION_NEUROTRANSMITTERS[ud.id]||[];
+    const ntBadges=nts.map(nt=>{
+      const info=NEUROTRANSMITTER_DB[nt];
+      const col2=info?info.color:'#aaa';
+      return `<span style="display:inline-block;background:${col2}22;border:1px solid ${col2}66;color:${col2};font-size:9px;padding:1px 6px;border-radius:10px;margin:1px;font-family:'Share Tech Mono',monospace">${nt}</span>`;
+    }).join('');
+
+    const hInfo=HORMONE_INFO[ud.id];
+    document.getElementById('det-rows').innerHTML=`
+      <div class="det-row"><span>Aktivite</span><span>%${pct}</span></div>
+      <div class="det-row"><span>Lob</span><span>${ud.lobe||'—'}</span></div>
+      ${hInfo?`<div class="det-row"><span>Ana NT</span><span style="color:var(--accent)">${hInfo.hormone}</span></div>`:''}
+      <div class="det-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <span>Nörotransmitterler</span>
+        <div style="margin-top:3px">${ntBadges||'—'}</div>
+      </div>
+    `;
+    document.getElementById('det-desc').innerHTML=
+      `<div style="line-height:1.8">${(REGION_DESC[ud.id]||'Bu bölge hakkında detay mevcut değil.').replace(/\n/g,'<br>')}</div>`;
+
+    // Sol üst paneli de güncelle
+    document.getElementById('rname').textContent=ud.name;
+    document.getElementById('rlobe').textContent=(ud.lobe||'').toUpperCase();
+    document.getElementById('abar').style.width=pct+'%';
+    document.getElementById('apct').textContent=`Aktivite: %${pct}`;
+
+  } else if(ud.type==='synapse'){
+    document.getElementById('det-typelabel').textContent='// SİNAPTİK BAĞLANTI';
+    document.getElementById('det-title').textContent=`${ud.srcName} → ${ud.tgtName}`;
+    document.getElementById('det-type').textContent='NÖRAL BAĞLANTI';
+    const pct=Math.round(ud.strength*100);
+    document.getElementById('det-bar').style.cssText=`width:${pct}%;background:linear-gradient(90deg,#ff770066,#ffaa44)`;
+    document.getElementById('det-rows').innerHTML=`
+      <div class="det-row"><span>Kaynak</span><span>${ud.srcName}</span></div>
+      <div class="det-row"><span>Hedef</span><span>${ud.tgtName}</span></div>
+      <div class="det-row"><span>Bağlantı Gücü</span><span>%${pct}</span></div>
+      <div class="det-row"><span>Yön</span><span>Unidireksiyonel</span></div>
+    `;
+    document.getElementById('det-desc').innerHTML=`
+      Bu sinaptik bağlantı <b>${ud.srcName}</b> nöronlarından <b>${ud.tgtName}</b> bölgesine sinyal iletir.
+      Bağlantı gücü <b>%${pct}</b> — bu değer iki bölge arasındaki fonksiyonel konnektiviteyi temsil eder.
+      Yüksek aktivite dönemlerinde bu bağlantı güçlenerek Hebbian plastisite ilkesiyle kalıcı hale gelebilir:
+      <i>"Birlikte ateşlenen nöronlar birbirine bağlanır."</i>
+    `;
+  } else if(ud.type==='vessel'){
+    document.getElementById('det-typelabel').textContent='// KAN DAMARI';
+    document.getElementById('det-title').textContent=ud.name||'—';
+    document.getElementById('det-type').textContent=(ud.type||'').toUpperCase();
+    const isA=ud.type==='Arter';
+    document.getElementById('det-bar').style.cssText=`width:85%;background:linear-gradient(90deg,${isA?'#cc223366':'#2255cc66'},${isA?'#ff4455':'#4477ee'})`;
+    document.getElementById('det-rows').innerHTML=`
+      <div class="det-row"><span>Tür</span><span>${ud.type||'—'}</span></div>
+      <div class="det-row"><span>Konum</span><span>${ud.side||'—'}</span></div>
+      <div class="det-row"><span>Görev</span><span style="font-size:10px">${ud.role||'—'}</span></div>
+    `;
+    document.getElementById('det-desc').innerHTML=isA
+      ?'Arterler oksijen ve besin taşıyan yüksek basınçlı damarlardır. Kalp atışıyla senkronize nabız atarlar. Beyin total kardiyak outputun ~%15\'ini tüketir.'
+      :'Venler deoxyjenize kanı ve metabolik atıkları uzaklaştırır. Beyin venöz sistemi kapaksızdır — pozisyon değişikliği venöz dönüşü etkiler.';
+  }
+}
+
+document.getElementById('det-close').onclick=()=>{document.getElementById('pdetail').style.display='none';};
+
+// ── RAYCASTER ───────────────────────────────────────────
+const ray=new THREE.Raycaster();
+ray.params.Line={threshold:0.15};
+ray.params.Points={threshold:0.15};
+const mouse=new THREE.Vector2();
+window.addEventListener('click',e=>{
+  if(e.target.closest('.panel,.ptg'))return;
+  mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mouse,camera);
+  const rHits=ray.intersectObjects(regionMeshes);
+  if(rHits.length){showDetail(rHits[0].object);return;}
+  const vHits=ray.intersectObjects(vesselMeshes);
+  if(vHits.length){showDetail(vHits[0].object);return;}
+  const sHits=ray.intersectObjects(synapseMeshes);
+  if(sHits.length){showDetail(sHits[0].object);}
+});
+
+// ── FALLBACK DATA ────────────────────────────────────────
+const FB_R={
+  V1_L:{name:"Primary Visual Cortex L",lobe:"occipital",coords:[12,-85,3],base_color:[.2,.6,.9]},
+  V1_R:{name:"Primary Visual Cortex R",lobe:"occipital",coords:[-12,-85,3],base_color:[.2,.6,.9]},
+  V2_L:{name:"Secondary Visual Cortex L",lobe:"occipital",coords:[20,-78,10],base_color:[.3,.5,1]},
+  A1_L:{name:"Primary Auditory Ctx L",lobe:"temporal",coords:[46,-22,10],base_color:[.9,.5,.2]},
+  A1_R:{name:"Primary Auditory Ctx R",lobe:"temporal",coords:[-46,-22,10],base_color:[.9,.5,.2]},
+  Broca_L:{name:"Broca's Area",lobe:"frontal",coords:[42,22,8],base_color:[.1,.8,.3]},
+  Wernicke_L:{name:"Wernicke's Area",lobe:"temporal",coords:[50,-38,18],base_color:[.3,.7,.2]},
+  M1_L:{name:"Motor Cortex L",lobe:"frontal",coords:[38,-23,55],base_color:[.4,.8,.4]},
+  M1_R:{name:"Motor Cortex R",lobe:"frontal",coords:[-38,-23,55],base_color:[.4,.8,.4]},
+  S1_L:{name:"Somatosensory Ctx L",lobe:"parietal",coords:[42,-24,50],base_color:[.5,.9,.5]},
+  DLPFC_L:{name:"DLPFC L",lobe:"frontal",coords:[38,36,28],base_color:[.9,.2,.2]},
+  DLPFC_R:{name:"DLPFC R",lobe:"frontal",coords:[-38,36,28],base_color:[.9,.2,.2]},
+  vmPFC:{name:"vmPFC",lobe:"frontal",coords:[0,48,-7],base_color:[.8,.3,.5]},
+  ACC:{name:"Anterior Cingulate",lobe:"frontal",coords:[0,32,18],base_color:[.7,.5,.8]},
+  Hippocampus_L:{name:"Hippocampus L",lobe:"temporal",coords:[26,-22,-12],base_color:[.5,.2,.7]},
+  Hippocampus_R:{name:"Hippocampus R",lobe:"temporal",coords:[-26,-22,-12],base_color:[.5,.2,.7]},
+  Amygdala_L:{name:"Amygdala L",lobe:"temporal",coords:[22,-4,-18],base_color:[1,.4,0]},
+  Amygdala_R:{name:"Amygdala R",lobe:"temporal",coords:[-22,-4,-18],base_color:[1,.4,0]},
+  Thalamus_L:{name:"Thalamus L",lobe:"diencephalon",coords:[10,-16,6],base_color:[.6,.6,.1]},
+  Thalamus_R:{name:"Thalamus R",lobe:"diencephalon",coords:[-10,-16,6],base_color:[.6,.6,.1]},
+  SN_L:{name:"Substantia Nigra",lobe:"midbrain",coords:[10,-18,-8],base_color:[.2,.9,.2]},
+  Raphe:{name:"Raphe Nuclei",lobe:"brainstem",coords:[0,-26,-20],base_color:[.9,.9,.2]},
+  LC:{name:"Locus Coeruleus",lobe:"pons",coords:[0,-34,-28],base_color:[.2,.4,1]},
+  CC_Genu:{name:"Corpus Callosum (Genu)",lobe:"commissure",coords:[0,20,12],base_color:[.95,.90,.85]},
+  CC_Body:{name:"Corpus Callosum (Body)",lobe:"commissure",coords:[0,0,20],base_color:[.92,.88,.82]},
+  CC_Splenium:{name:"Corpus Callosum (Splenium)",lobe:"commissure",coords:[0,-28,18],base_color:[.90,.86,.80]},
+  BA47_L:{name:"Inf. Frontal Gyrus (Yabancı Dil)",lobe:"frontal",coords:[44,26,-4],base_color:[.2,.85,.6]},
+  VLPFC_L:{name:"Ventrolateral PFC",lobe:"frontal",coords:[46,30,8],base_color:[.2,.75,.5]},
+};
+const FB_C=[
+  ["V1_L","V2_L",.9],["A1_L","Wernicke_L",.8],["Wernicke_L","Broca_L",.7],
+  ["M1_L","S1_L",.9],["DLPFC_L","ACC",.6],["DLPFC_R","ACC",.6],
+  ["ACC","Amygdala_L",.5],["Hippocampus_L","Amygdala_L",.8],
+  ["Thalamus_L","V1_L",.7],["SN_L","DLPFC_L",.4],["Raphe","Hippocampus_L",.5],["LC","Amygdala_L",.6],
+  ["CC_Genu","DLPFC_L",.9],["CC_Genu","DLPFC_R",.9],
+  ["CC_Body","M1_L",.9],["CC_Body","M1_R",.9],
+  ["CC_Splenium","V1_L",.9],["CC_Splenium","V1_R",.9],["CC_Splenium","Hippocampus_L",.8],
+  ["BA47_L","Broca_L",.85],["BA47_L","Wernicke_L",.75],["VLPFC_L","BA47_L",.8],
+];
+
+// ── INIT ────────────────────────────────────────────────
+async function init(){
+  let rDefs=FB_R,acts=Object.fromEntries(Object.keys(FB_R).map(k=>[k,.5])),conns=FB_C;
+  try{
+    const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),3000);
+    const resp=await fetch('/set_mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'relaxed'}),signal:ctrl.signal});
+    if(resp.ok){const d=await resp.json();if(d.regions)rDefs=d.regions;if(d.activities)acts=d.activities;if(d.connections)conns=d.connections;}
+  }catch(e){console.warn('Flask yok, fallback.');}
+
+  connectionList=[...conns];
+  console.log('Connections loaded:', connectionList.length);
+  const coords=Object.values(rDefs).map(r=>r.coords);
+  CENTER=coords.reduce((s,c)=>[s[0]+c[0],s[1]+c[1],s[2]+c[2]],[0,0,0]).map(v=>v/coords.length);
+  let maxD=0;coords.forEach(c=>{const d=Math.sqrt((c[0]-CENTER[0])**2+(c[1]-CENTER[1])**2+(c[2]-CENTER[2])**2);if(d>maxD)maxD=d;});
+  // BRAIN_R is set by loadBrainGLB
+
+  await loadBrainGLB();
+  makeVessels(BRAIN_R);makeWaveRings(BRAIN_R);setWave('relaxed');
+
+  Object.entries(rDefs).forEach(([id,r])=>{
+    const m=makeNode(id,r,acts[id]??0.5);regionG.add(m);regionMeshes.push(m);
+  });
+  updateRegions(null);buildSynapses();
+  document.getElementById('loading').style.display='none';
+}
+
+// ── BUTTONS ─────────────────────────────────────────────
+document.getElementById('applymode').onclick=async()=>{
+  const mode=document.getElementById('modesel').value;
+  try{const d=await(await fetch('/set_mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode})})).json();connectionList=d.connections||connectionList;updateRegions(d.activities);}catch{}
+  buildSynapses();setWave(mode);
+};
+document.getElementById('submitall').onclick=async()=>{
+  const q=id=>{const el=document.getElementById(id);return el?parseInt(el.value)||0:0;};
+  // ASD: Sosyal iletişim (q1-q8) + Rutin/Tekrar (q9-q14) + Duyusal (q15-q20) + Empati (q55-q57) + Maskeleme (q58-q60)
+  const asd_comm=[1,2,3,4,5,6,7,8].reduce((a,i)=>a+q(`q${i}`),0)/8;
+  const asd_rrb=[9,10,11,12,13,14].reduce((a,i)=>a+q(`q${i}`),0)/6;
+  const asd_sens=[15,16,17,18,19,20].reduce((a,i)=>a+q(`q${i}`),0)/6;
+  const asd_score=(asd_comm*0.4+asd_rrb*0.35+asd_sens*0.25);
+  // ADHD: Dikkat (q21-q30)
+  const adhd_score=[21,22,23,24,25,26,27,28,29,30].reduce((a,i)=>a+q(`q${i}`),0)/10;
+  // Depresyon: PHQ-9 temelli (q31-q33,q37)
+  const dep_score=(q('q31')+q('q32')+q('q33')+q('q37'))/4;
+  // Anksiyete: GAD-7 temelli (q34,q43,q44,q45)
+  const anx_score=(q('q34')+q('q43')+q('q44')+q('q45'))/4;
+  // Mani: MDQ temelli (q39-q42)
+  const manic_score=(q('q39')+q('q40')+q('q41')+q('q42'))/4;
+  // RSD / Duygusal Düzensizlik (q35,q36,q38)
+  const rsd_score=(q('q35')+q('q36')+q('q38'))/3;
+
+  const payload={
+    handedness:document.getElementById('handedness').value,
+    myopia_now:parseFloat(document.getElementById('myopia-now').value)||0,
+    myopia_years:parseInt(document.getElementById('myopia-years').value)||0,
+    asd_score,adhd_score,dep_score,anx_score,manic_score,
+  };
+  try{
+    const d=await(await fetch('/personalize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json();
+    connectionList=d.connections||connectionList;updateRegions(d.activities);buildSynapses();
+  }catch{}
+
+  const dm=document.getElementById('diagmsg');dm.style.display='block';
+  const flags=[];
+  if(asd_score>55)flags.push(`ASD eğilimi: %${asd_score.toFixed(0)}`);
+  if(adhd_score>55)flags.push(`DEHB eğilimi: %${adhd_score.toFixed(0)}`);
+  if(dep_score>50)flags.push(`Depresif belirtiler: %${dep_score.toFixed(0)}`);
+  if(anx_score>50)flags.push(`Anksiyete: %${anx_score.toFixed(0)}`);
+  if(manic_score>50)flags.push(`Mani eğilimi: %${manic_score.toFixed(0)}`);
+  if(rsd_score>55)flags.push(`Duygusal hassasiyet (RSD): %${rsd_score.toFixed(0)}`);
+  dm.innerHTML=flags.length
+    ? '<b>Dikkat çeken alanlar:</b><br>'+flags.join('<br>')+'<br><small style="color:var(--dim)">Bu sonuçlar tanı niteliği taşımaz.</small>'
+    : 'Belirgin nörodiverjans örüntüsü tespit edilmedi.';
+};
+document.getElementById('applymyopia').onclick=()=>document.getElementById('submitall').click();
+// Populate NT panel
+const ntContent=document.getElementById('nt-content');
+Object.entries(NEUROTRANSMITTER_DB).forEach(([name,info])=>{
+  const div=document.createElement('div');
+  div.className='nt-item';
+  div.style.borderLeftColor=info.color;
+  div.style.borderLeftWidth='3px';
+  div.innerHTML=`
+    <div class="nt-name" style="color:${info.color}">${name}</div>
+    <div class="nt-tag">${info.sistem.split(',')[0]}</div>
+    <div class="nt-row"><b>Etki:</b> ${info.etki}</div>
+    <div class="nt-row"><b>Eksiklik:</b> ${info.eksiklik}</div>
+    <div class="nt-row"><b>Fazlalık:</b> ${info.fazlalık}</div>
+    <div class="nt-row" style="margin-top:4px;color:var(--accent2)"><b>İlaçlar:</b> ${info.ilaçlar}</div>
+  `;
+  ntContent.appendChild(div);
+});
+
+// NT toggle
+// Position NT button right below legend
+function positionNTButton(){
+  const legend=document.getElementById('plegend');
+  const rect=legend.getBoundingClientRect();
+  const btn=document.getElementById('tg-nt');
+  const pnt=document.getElementById('pnt');
+  const top=rect.bottom+8;
+  btn.style.top=top+'px';
+  // Panel opens UPWARD: position it above the button
+  pnt.style.bottom='auto';
+  pnt._btnTop=top;
+  // Will be set after display toggle based on panel height
+}
+positionNTButton();
+window.addEventListener('resize',positionNTButton);
+
+document.getElementById('tg-nt').onclick=()=>{
+  const el=document.getElementById('pnt');
+  const btn=document.getElementById('tg-nt');
+  const cur=window.getComputedStyle(el).display;
+  if(cur==='none'){
+    el.style.display='block';
+    // Position above button
+    const btnRect=btn.getBoundingClientRect();
+    const panelH=Math.min(260, el.scrollHeight);
+    el.style.top=(btnRect.top - panelH - 8)+'px';
+    el.style.left='14px';
+  } else {
+    el.style.display='none';
+  }
+};
+
+[['tg-info','pinfo'],['tg-mode','pmode'],['tg-q','pq']].forEach(([b,p])=>{
+  document.getElementById(b).onclick=()=>{const el=document.getElementById(p);const cur=window.getComputedStyle(el).display;el.style.display=cur==='none'?'block':'none';};
+});
+
+// ── ANIMATION ───────────────────────────────────────────
+const clock=new THREE.Clock();let t=0;
+function animate(){
+  requestAnimationFrame(animate);const dt=clock.getDelta();t+=dt;
+  brainG.scale.setScalar(1+Math.sin(t*.4)*.006);
+  brainG.rotation.y+=dt*.025;
+  animateWaves(t);
+  regionMeshes.forEach(m=>{
+    m.userData.ring.rotation.z+=dt*(.4+m.userData.activity*.6);
+    m.userData.ring.rotation.x=Math.sin(t*.8)*.22;
+  });
+  animateSynapses(dt);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+init().then(()=>animate());
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);labelRenderer.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>
