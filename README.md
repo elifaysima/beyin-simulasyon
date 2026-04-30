@@ -6,14 +6,14 @@ Gerçek zamanlı, interaktif 3B beyin simülasyonu. Flask backend + Three.js fro
 
 ## 🖥️ Özellikler
 
-- **3B Beyin Modeli** — Gerçek GLB modeli, gyri/sulci detayları ile
-- **23 Beyin Bölgesi** — MNI koordinatlarıyla anatomik olarak doğru konumlandırılmış
+- **3B Beyin Modeli** — Gerçek GLB modeli, gyri/sulci (ak madde-boz madde) detayları ile
+- **28 Beyin Bölgesi** — MNI koordinatlarıyla anatomik olarak doğru konumlandırılmış
 - **Corpus Callosum** — Genu, Body, Splenium bölümleriyle
-- **50+ Beyin Modu** — Duygusal, bilişsel, klinik, fizyolojik ve uyku evreleri
+- **50 Beyin Modu** — Duygusal, bilişsel, klinik, fizyolojik ve uyku evreleri
 - **Wilson-Cowan Sinir Ağı Dinamiği** — Bölge aktivasyonları nöral diferansiyel denklemlerle hesaplanır
-- **Sinaptik Animasyonlar** — Bölgeler arası bağlantı akışları
+- **Sinaptik Animasyonlar** — Bölgeler arası bağlantı akışları, tıklanınca bilgi sunar.
 - **Damar Sistemi** — Arterler ve venler tıklanabilir, anatomik bilgi sunar
-- **Nörotransmitter Veritabanı** — Dopamin, Serotonin, Noradrenalin, Glutamat, GABA, Asetilkolin
+- **Nörotransmitter Veritabanı** — Dopamin, Serotonin, Noradrenalin, Glutamat, GABA, Asetilkolin. Sol tarafta sekmesi var üstüne tıklanınca scroll eylemek lazım.
 - **60 Soruluk Nörodiverjans Anketi** — DSM-5 / ICD-11 / SCQ / GAD-7 / PHQ-9 temelli
 - **Beyin Dalgası Görselleştirmesi** — Mod bazlı sinüzoidal dalgalar
 
@@ -33,7 +33,7 @@ python aa.py
 Tarayıcıda aç: `http://localhost:5002`
 
 ---
-
+ÇALIŞMASI İÇİN İNDEX.HTML DOSYASINI DA İNDİRMEK GEREKİYOR. O DOSYA DA ANA KLASÖRÜN İÇİNDEKİ TEMPLATES KLASÖRÜNDE OLMALI!!!!!!
 ## 📁 Dosya Yapısı
 
 ```
